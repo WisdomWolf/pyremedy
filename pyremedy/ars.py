@@ -7,7 +7,7 @@ from datetime import datetime
 
 from . import arh
 from .exceptions import ARSError
-
+import pdb
 
 class ARS(object):
     """
@@ -387,6 +387,7 @@ class ARS(object):
         # so that we aren't in the middle of allocating memory to the
         # AREntryListFieldList struct when we realise a field is invalid.
         for field in fields:
+            field = field if isinstance(field, bytes) else str.encode(field)
             if field not in self.field_name_to_id_cache[schema]:
                 raise ARSError(
                     'A field with name {} does not exist in schema '
@@ -396,7 +397,7 @@ class ARS(object):
         schema_artype = arh.ARNameType()
         schema_artype.value = schema
         display_tag_artype = arh.ARNameType()
-        display_tag_artype.value = ''
+        display_tag_artype.value = b''
         qualifier_struct = arh.ARQualifierStruct()
 
         if (
@@ -443,9 +444,16 @@ class ARS(object):
         )
 
         for i, field in enumerate(fields):
-            field_list.fieldsList[i].fieldId = (
-                self.field_name_to_id_cache[schema][field]
-            )
+            try:
+                field_list.fieldsList[i].fieldId = (
+                    self.field_name_to_id_cache[schema][field]
+                )
+            except KeyError:
+                #pdb.set_trace()
+                field_list.fieldsList[i].fieldId = (
+                    self.field_name_to_id_cache[schema][str.encode(field)]
+                )
+
             # From the C API Reference document (Chapter 3 / Entries)
             # For ARGetListEntryWithFields, set this value to a number greater
             # than 0.
@@ -542,9 +550,15 @@ class ARS(object):
 
                 # Extract the appropriate piece of data depending on its type
                 try:
-                    entry_values[field_name] = self._extract_field(
-                        schema, field_id, value_struct
-                    )
+                    field_name = field_name if isinstance(field_name, str) else field_name.decode('utf-8')
+                    try:
+                        entry_values[field_name] = self._extract_field(
+                            schema, field_id, value_struct
+                        ).decode('utf-8')
+                    except:
+                        entry_values[field_name] = self._extract_field(
+                            schema, field_id, value_struct
+                        )
                 except ARSError:
                     self.arlib.FreeARQualifierStruct(
                         byref(qualifier_struct), arh.FALSE
@@ -558,7 +572,7 @@ class ARS(object):
                     self.arlib.FreeARStatusList(byref(self.status), arh.FALSE)
                     raise
 
-            entries.append((entry_id, entry_values))
+            entries.append((entry_id.decode('utf-8'), entry_values))
 
         self.arlib.FreeARQualifierStruct(byref(qualifier_struct), arh.FALSE)
         self.arlib.FreeAREntryListFieldList(byref(field_list), arh.FALSE)
@@ -1214,7 +1228,10 @@ class ARS(object):
         :raises: ARSError
         """
         schema = schema if isinstance(schema, bytes) else str.encode(schema)
-        field_id = field_id if isinstance(field_id, bytes) else str.encode(field_id)
+        try:
+            field_id = field_id if isinstance(field_id, bytes) else str.encode(field_id)
+        except TypeError:
+            pass
 
         # Determine the data type of the value
         data_type = value_struct.dataType

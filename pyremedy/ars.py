@@ -27,6 +27,10 @@ class ARS(object):
     """
 
     def __init__(self, server, user, password, port=0, rpc_program_number=0):
+        server = server if isinstance(server, bytes) else str.encode(server)
+        user = user if isinstance(user, bytes) else str.encode(user)
+        password = password if isinstance(password, bytes) else str.encode(password)
+
         #: The Remedy ARS C API shared object file which is used to interact
         #: with the Remedy server
         self.arlib = CDLL('libar_lx64.so')
@@ -230,6 +234,7 @@ class ARS(object):
         :raises: ARSError
         """
 
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
 
@@ -250,6 +255,9 @@ class ARS(object):
                  the respective entry id
         :raises: ARSError
         """
+
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        entry_id = entry_id if isinstance(entry_id, bytes) else str.encode(entry_id)
 
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
@@ -368,6 +376,9 @@ class ARS(object):
                  entry values
         :raises: ARSError
         """
+
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        qualifier = qualifier if isinstance(qualifier, bytes) else str.encode(qualifier)
 
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
@@ -569,6 +580,8 @@ class ARS(object):
         :return: the entry id of the newly created entry
         :raises: ARSError
         """
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+
 
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
@@ -649,6 +662,8 @@ class ARS(object):
                             of the respective field
         :raises: ARSError
         """
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        entry_id = entry_id if isinstance(entry_id, bytes) else str.encode(entry_id)
 
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
@@ -739,6 +754,8 @@ class ARS(object):
         :param str entry_id: the entry id of the entry that you wish to delete
         :raises: ARSError
         """
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        entry_id = entry_id if isinstance(entry_id, bytes) else str.encode(entry_id)
 
         # Clear previous errors
         self.errors = []
@@ -793,6 +810,7 @@ class ARS(object):
         :param str schema: the schema name to retrieve field information for
         :raises: ARSError
         """
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
 
         # Clear previous errors
         self.errors = []
@@ -1195,6 +1213,8 @@ class ARS(object):
         :return: the value of the field requested
         :raises: ARSError
         """
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        field_id = field_id if isinstance(field_id, bytes) else str.encode(field_id)
 
         # Determine the data type of the value
         data_type = value_struct.dataType
@@ -1238,6 +1258,8 @@ class ARS(object):
                                                       field id and value
         :raises: ARSError
         """
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        field_id = field_id if isinstance(field_id, bytes) else str.encode(field_id)
 
         # Determine the data type of the value
         data_type = self.field_id_to_type_cache[schema][field_id]
@@ -1290,6 +1312,7 @@ class ARS(object):
         :param str schema: the schema name related to the error (only required
                            for create and update operations)
         """
+        schema = schema if isinstance(schema, bytes) else str.encode(schema)
 
         # Go through each error present and add them to the errors list
         for i in range(self.status.numItems):

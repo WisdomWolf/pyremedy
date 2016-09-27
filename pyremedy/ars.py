@@ -16,7 +16,10 @@ def b(x):
 
 
 def s(x):
-    return x if isinstance(s, bytes) else codecs.latin_1_decode(x)[0]
+    try:
+        return x if not isinstance(x, unicode) else x.encode()
+    except NameError:
+        return x if isinstance(x, str) else x.decode()
 
 
 class ARS(object):
@@ -585,7 +588,7 @@ class ARS(object):
                     self.arlib.FreeARStatusList(byref(self.status), arh.FALSE)
                     raise
 
-            entries.append((entry_id.decode('utf-8'), entry_values))
+            entries.append((s(entry_id), entry_values))
 
         self.arlib.FreeARQualifierStruct(byref(qualifier_struct), arh.FALSE)
         self.arlib.FreeAREntryListFieldList(byref(field_list), arh.FALSE)

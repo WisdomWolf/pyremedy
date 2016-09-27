@@ -183,7 +183,7 @@ class ARS(object):
             return self.schema_cache
 
         name_artype = arh.ARNameType()
-        name_artype.value = ''
+        name_artype.value = b''
         schema_list = arh.ARNameList()
 
         if (
@@ -218,7 +218,7 @@ class ARS(object):
 
         # Save the schema list into the cache
         self.schema_cache = [
-            schema_list.nameList[i].value for i in range(schema_list.numItems)
+            schema_list.nameList[i].value.decode('utf-8') for i in range(schema_list.numItems)
         ]
 
         self.arlib.FreeARNameList(byref(schema_list), arh.FALSE)
@@ -239,7 +239,8 @@ class ARS(object):
         self.update_fields(schema)
 
         # Return just the field names of the selected schema
-        return self.field_name_to_id_cache[schema].keys()
+        field_keys = self.field_name_to_id_cache[schema].keys()
+        return [x.decode('utf-8') for x in list(field_keys)]
 
     def get(self, schema, entry_id, fields):
         """
@@ -266,6 +267,7 @@ class ARS(object):
         # so that we aren't in the middle of allocating memory to the
         # AREntryListFieldList struct when we realise a field is invalid.
         for field in fields:
+            field = field if isinstance(field, bytes) else str.encode(field)
             if field not in self.field_name_to_id_cache[schema]:
                 raise ARSError(
                     'A field with name {} does not exist in schema '
@@ -290,9 +292,14 @@ class ARS(object):
         )
 
         for i, field in enumerate(fields):
-            internal_id_list.internalIdList[i] = (
-                self.field_name_to_id_cache[schema][field]
-            )
+            try:
+                internal_id_list.internalIdList[i] = (
+                    self.field_name_to_id_cache[schema][field]
+                )
+            except KeyError:
+                internal_id_list.internalIdList[i] = (
+                    self.field_name_to_id_cache[schema][str.encode(field)]
+                )
 
         schema_artype = arh.ARNameType()
         schema_artype.value = schema
@@ -334,6 +341,12 @@ class ARS(object):
             field_name = self.field_id_to_name_cache[schema][field_id]
             value_struct = field_value_list.fieldValueList[i].value
             try:
+                field_name = field_name if isinstance(field_name, str) else field_name.decode('utf-8')
+                #try:
+                #    entry_values[field_name] = self._extract_field(
+                #        schema, field_id, value_struct
+                #    ).decode('utf-8')
+                #except:
                 entry_values[field_name] = self._extract_field(
                     schema, field_id, value_struct
                 )
@@ -1248,7 +1261,7 @@ class ARS(object):
         elif data_type == arh.AR_DATA_TYPE_REAL:
             return value_struct.u.realVal
         elif data_type == arh.AR_DATA_TYPE_CHAR:
-            return value_struct.u.charVal
+            return value_struct.u.charVal if isinstance(value_struct.u.charVal, bytes) else str.encode(value_struct.u.charVal)
         elif data_type == arh.AR_DATA_TYPE_ENUM:
             return (
                 self.enum_id_to_name_cache[schema][field_id][value_struct.u.enumVal]

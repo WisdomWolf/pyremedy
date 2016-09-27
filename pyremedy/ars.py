@@ -8,9 +8,15 @@ from datetime import datetime
 from . import arh
 from .exceptions import ARSError
 import codecs
+import pdb
+
 
 def b(x):
-    return x if isinstance(x, bytes) else codecs.latin_1_encode(x)
+    return x if isinstance(x, bytes) else codecs.latin_1_encode(x)[0]
+
+
+def s(x):
+    return x if isinstance(s, bytes) else codecs.latin_1_decode(x)[0]
 
 
 class ARS(object):
@@ -461,7 +467,6 @@ class ARS(object):
                     self.field_name_to_id_cache[schema][field]
                 )
             except KeyError:
-                #pdb.set_trace()
                 field_list.fieldsList[i].fieldId = (
                     self.field_name_to_id_cache[schema][str.encode(field)]
                 )
@@ -562,10 +567,11 @@ class ARS(object):
 
                 # Extract the appropriate piece of data depending on its type
                 try:
-                    field_name = b(field_name)
+                    field_name = s(field_name)
                     entry_values[field_name] = self._extract_field(
                         schema, field_id, value_struct
                     )
+                    #pdb.set_trace()
                 except ARSError:
                     self.arlib.FreeARQualifierStruct(
                         byref(qualifier_struct), arh.FALSE
@@ -1255,7 +1261,7 @@ class ARS(object):
         elif data_type == arh.AR_DATA_TYPE_REAL:
             return value_struct.u.realVal
         elif data_type == arh.AR_DATA_TYPE_CHAR:
-            return b(value_struct.u.charVal)
+            return s(value_struct.u.charVal)
         elif data_type == arh.AR_DATA_TYPE_ENUM:
             return (
                 self.enum_id_to_name_cache[schema][field_id][value_struct.u.enumVal]

@@ -7,7 +7,11 @@ from datetime import datetime
 
 from . import arh
 from .exceptions import ARSError
-import pdb
+import codecs
+
+def b(x):
+    return x if isinstance(x, bytes) else codecs.latin_1_encode(x)
+
 
 class ARS(object):
     """
@@ -27,9 +31,9 @@ class ARS(object):
     """
 
     def __init__(self, server, user, password, port=0, rpc_program_number=0):
-        server = server if isinstance(server, bytes) else str.encode(server)
-        user = user if isinstance(user, bytes) else str.encode(user)
-        password = password if isinstance(password, bytes) else str.encode(password)
+        server = b(server)
+        user = b(user)
+        password = b(password)
 
         #: The Remedy ARS C API shared object file which is used to interact
         #: with the Remedy server
@@ -234,7 +238,7 @@ class ARS(object):
         :raises: ARSError
         """
 
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        schema = b(schema)
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
 
@@ -257,8 +261,8 @@ class ARS(object):
         :raises: ARSError
         """
 
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
-        entry_id = entry_id if isinstance(entry_id, bytes) else str.encode(entry_id)
+        schema = b(schema)
+        entry_id = b(entry_id)
 
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
@@ -267,7 +271,7 @@ class ARS(object):
         # so that we aren't in the middle of allocating memory to the
         # AREntryListFieldList struct when we realise a field is invalid.
         for field in fields:
-            field = field if isinstance(field, bytes) else str.encode(field)
+            field = b(field)
             if field not in self.field_name_to_id_cache[schema]:
                 raise ARSError(
                     'A field with name {} does not exist in schema '
@@ -341,12 +345,7 @@ class ARS(object):
             field_name = self.field_id_to_name_cache[schema][field_id]
             value_struct = field_value_list.fieldValueList[i].value
             try:
-                field_name = field_name if isinstance(field_name, str) else field_name.decode('utf-8')
-                #try:
-                #    entry_values[field_name] = self._extract_field(
-                #        schema, field_id, value_struct
-                #    ).decode('utf-8')
-                #except:
+                field_name = b(field_name)
                 entry_values[field_name] = self._extract_field(
                     schema, field_id, value_struct
                 )
@@ -390,8 +389,8 @@ class ARS(object):
         :raises: ARSError
         """
 
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
-        qualifier = qualifier if isinstance(qualifier, bytes) else str.encode(qualifier)
+        schema = b(schema)
+        qualifier = b(qualifier)
 
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
@@ -400,7 +399,7 @@ class ARS(object):
         # so that we aren't in the middle of allocating memory to the
         # AREntryListFieldList struct when we realise a field is invalid.
         for field in fields:
-            field = field if isinstance(field, bytes) else str.encode(field)
+            field = b(field)
             if field not in self.field_name_to_id_cache[schema]:
                 raise ARSError(
                     'A field with name {} does not exist in schema '
@@ -563,15 +562,10 @@ class ARS(object):
 
                 # Extract the appropriate piece of data depending on its type
                 try:
-                    field_name = field_name if isinstance(field_name, str) else field_name.decode('utf-8')
-                    try:
-                        entry_values[field_name] = self._extract_field(
-                            schema, field_id, value_struct
-                        ).decode('utf-8')
-                    except:
-                        entry_values[field_name] = self._extract_field(
-                            schema, field_id, value_struct
-                        )
+                    field_name = b(field_name)
+                    entry_values[field_name] = self._extract_field(
+                        schema, field_id, value_struct
+                    )
                 except ARSError:
                     self.arlib.FreeARQualifierStruct(
                         byref(qualifier_struct), arh.FALSE
@@ -607,7 +601,7 @@ class ARS(object):
         :return: the entry id of the newly created entry
         :raises: ARSError
         """
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        schema = b(schema)
 
 
         # Ensure we have all field and enum details for the schema
@@ -689,8 +683,8 @@ class ARS(object):
                             of the respective field
         :raises: ARSError
         """
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
-        entry_id = entry_id if isinstance(entry_id, bytes) else str.encode(entry_id)
+        schema = b(schema)
+        entry_id = b(entry_id)
 
         # Ensure we have all field and enum details for the schema
         self.update_fields(schema)
@@ -781,8 +775,8 @@ class ARS(object):
         :param str entry_id: the entry id of the entry that you wish to delete
         :raises: ARSError
         """
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
-        entry_id = entry_id if isinstance(entry_id, bytes) else str.encode(entry_id)
+        schema = b(schema)
+        entry_id = b(entry_id)
 
         # Clear previous errors
         self.errors = []
@@ -837,7 +831,7 @@ class ARS(object):
         :param str schema: the schema name to retrieve field information for
         :raises: ARSError
         """
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        schema = b(schema)
 
         # Clear previous errors
         self.errors = []
@@ -1240,7 +1234,7 @@ class ARS(object):
         :return: the value of the field requested
         :raises: ARSError
         """
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        schema = b(schema)
         try:
             field_id = field_id if isinstance(field_id, bytes) else str.encode(field_id)
         except TypeError:
@@ -1261,7 +1255,7 @@ class ARS(object):
         elif data_type == arh.AR_DATA_TYPE_REAL:
             return value_struct.u.realVal
         elif data_type == arh.AR_DATA_TYPE_CHAR:
-            return value_struct.u.charVal if isinstance(value_struct.u.charVal, bytes) else str.encode(value_struct.u.charVal)
+            return b(value_struct.u.charVal)
         elif data_type == arh.AR_DATA_TYPE_ENUM:
             return (
                 self.enum_id_to_name_cache[schema][field_id][value_struct.u.enumVal]
@@ -1288,8 +1282,8 @@ class ARS(object):
                                                       field id and value
         :raises: ARSError
         """
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
-        field_id = field_id if isinstance(field_id, bytes) else str.encode(field_id)
+        schema = b(schema)
+        field_id = b(field_id)
 
         # Determine the data type of the value
         data_type = self.field_id_to_type_cache[schema][field_id]
@@ -1342,7 +1336,7 @@ class ARS(object):
         :param str schema: the schema name related to the error (only required
                            for create and update operations)
         """
-        schema = schema if isinstance(schema, bytes) else str.encode(schema)
+        schema = b(schema)
 
         # Go through each error present and add them to the errors list
         for i in range(self.status.numItems):

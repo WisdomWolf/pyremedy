@@ -12,7 +12,10 @@ import pdb
 
 
 def b(x):
-    return x if isinstance(x, bytes) else codecs.latin_1_encode(x)[0]
+    try:
+        return x if isinstance(x, bytes) else codecs.latin_1_encode(x)[0]
+    except TypeError:
+        return x
 
 
 def s(x):
